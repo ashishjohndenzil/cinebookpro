@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineBook - Smart Movie Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .seat {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .seat:hover {
+            transform: scale(1.1);
+        }
+        
+        .seat.available {
+            background: #e5e7eb;
+            border: 2px solid #d1d5db;
+        }
+        
+        .seat.selected {
+            background: #ff0055;
+            border: 2px solid #dc1f4a;
+            color: white;
+        }
+        
+        .seat.booked {
+            background: #6b7280;
+            border: 2px solid #4b5563;
+            cursor: not-allowed;
+            color: white;
+        }
+        
+        .seat.held {
+            background: #fbbf24;
+            border: 2px solid #f59e0b;
+            color: white;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .timer-progress {
+            animation: timerCountdown 300s linear forwards;
+        }
+        
+        @keyframes timerCountdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        .language-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">CineBook</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Language Filter Buttons -->
+                    <div id="languageFilters" class="flex items-center space-x-2 hidden">
+                        <button class="language-filter-btn px-3 py-1 bg-pink-600 text-white border border-pink-600 rounded-full text-sm font-medium hover:bg-pink-700" data-lang="all">All</button>
+                        <button class="language-filter-btn px-3 py-1 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-lang="english">English</button>
+                        <button class="language-filter-btn px-3 py-1 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-lang="hindi">Hindi</button>
+                        <button class="language-filter-btn px-3 py-1 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-lang="malayalam">Malayalam</button>
+                        <button class="language-filter-btn px-3 py-1 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-lang="tamil">Tamil</button>
+                    </div>
+                    
+                    <!-- User Menu -->
+                    <div id="userMenu" class="hidden flex items-center space-x-4">
+                        <button id="myBookingsBtn" class="text-gray-600 hover:text-gray-900 font-medium">My Bookings</button>
+                        <div class="flex items-center space-x-2">
+                            <div id="userAvatar" class="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center">
+                                <span id="userInitials" class="text-sm font-medium text-white"></span>
+                            </div>
+                            <button id="logoutBtn" class="text-gray-600 hover:text-gray-900 text-sm">Logout</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Auth Buttons -->
+                    <div id="authButtons" class="flex items-center space-x-3">
+                        <button id="loginBtn" class="text-gray-600 hover:text-gray-900 font-medium">Login</button>
+                        <button id="signupBtn" class="bg-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-pink-700">Sign Up</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Login Page -->
+        <div id="loginPage" class="page hidden">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Welcome Back</h2>
+                
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="loginEmail" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Enter your email">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="loginPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Enter your password">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-lg font-medium hover:bg-pink-700">
+                        Login
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">Don't have an account? 
+                        <button id="switchToSignup" class="text-pink-600 hover:text-pink-700 font-medium">Sign up</button>
+                    </p>
+                </div>
+                
+                <!-- Demo Users -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm font-medium text-blue-800 mb-2">Demo Users:</p>
+                    <div class="space-y-1 text-xs text-blue-700">
+                        <p>john@demo.com / password123</p>
+                        <p>sarah@demo.com / password123</p>
+                        <p>raj@demo.com / password123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signup Page -->
+        <div id="signupPage" class="page hidden">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Create Account</h2>
+                
+                <form id="signupForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="signupName" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Enter your full name">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="signupEmail" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Enter your email">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="signupPhone" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Enter your phone number">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="signupPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                               placeholder="Create a password">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Language</label>
+                        <select id="signupLanguage" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                            <option value="english">English</option>
+                            <option value="hindi">Hindi</option>
+                            <option value="malayalam">Malayalam</option>
+                            <option value="tamil">Tamil</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-lg font-medium hover:bg-pink-700">
+                        Create Account
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">Already have an account? 
+                        <button id="switchToLogin" class="text-pink-600 hover:text-pink-700 font-medium">Login</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Home Page -->
+        <div id="homePage" class="page hidden">
+            <!-- Search and Filters -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <div class="flex-1">
+                        <input type="text" id="searchInput" placeholder="Search for movies, theaters..." 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                    </div>
+                    <select id="locationFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                        <option>Mumbai</option>
+                        <option>Delhi</option>
+                        <option>Bangalore</option>
+                        <option>Chennai</option>
+                        <option>Kochi</option>
+                        <option>Hyderabad</option>
+                        <option>Kolkata</option>
+                        <option>Pune</option>
+                    </select>
+                </div>
+                
+                <!-- Filter Chips -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button class="filter-chip px-4 py-2 bg-pink-600 text-white border border-pink-600 rounded-full text-sm font-medium hover:bg-pink-700" data-filter="all">All</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="action">Action</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="comedy">Comedy</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="drama">Drama</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="horror">Horror</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="romance">Romance</button>
+                    <button class="filter-chip px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50" data-filter="thriller">Thriller</button>
+                </div>
+            </div>
+
+            <!-- Now Showing -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Latest Movies</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="movieGrid">
+                    <!-- Movies will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Details Page -->
+        <div id="movieDetailsPage" class="page hidden">
+            <button id="backToHome" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Movies
+            </button>
+            
+            <div id="movieDetailsContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Theater & Showtime Page -->
+        <div id="theaterPage" class="page hidden">
+            <button id="backToMovieDetails" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Movie Details
+            </button>
+            
+            <div id="theaterContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Seat Selection Page -->
+        <div id="seatPage" class="page hidden">
+            <button id="backToTheater" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Showtimes
+            </button>
+            
+            <!-- Timer Bar -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-yellow-800">Seats held for you</span>
+                    <span id="timerDisplay" class="text-sm font-bold text-yellow-800">05:00</span>
+                </div>
+                <div class="w-full bg-yellow-200 rounded-full h-2">
+                    <div id="timerBar" class="bg-yellow-500 h-2 rounded-full timer-progress"></div>
+                </div>
+            </div>
+            
+            <div id="seatContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Cart & Payment Page -->
+        <div id="cartPage" class="page hidden">
+            <button id="backToSeats" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Seat Selection
+            </button>
+            
+            <div id="cartContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Booking Success Page -->
+        <div id="successPage" class="page hidden">
+            <div id="successContent" class="fade-in text-center">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- My Bookings Page -->
+        <div id="bookingsPage" class="page hidden">
+            <button id="backToHomeFromBookings" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Home
+            </button>
+            
+            <div id="bookingsContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Edit Booking Page -->
+        <div id="editBookingPage" class="page hidden">
+            <button id="backToBookings" class="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to My Bookings
+            </button>
+            
+            <div id="editBookingContent" class="fade-in">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Cart (Sticky) -->
+    <div id="bottomCart" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 hidden slide-up">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+                <p class="font-medium text-gray-900" id="cartSummary">2 Tickets Selected</p>
+                <p class="text-sm text-gray-600" id="cartPrice">₹480</p>
+            </div>
+            <button id="proceedToPayment" class="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700">
+                Proceed to Payment
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-20 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Application State
+        let appState = {
+            currentPage: 'login',
+            currentUser: null,
+            selectedMovie: null,
+            selectedTheater: null,
+            selectedShowtime: null,
+            selectedSeats: [],
+            bookings: JSON.parse(localStorage.getItem('bookings') || '{}'),
+            currentBooking: null,
+            timer: null,
+            timeLeft: 300,
+            selectedLanguage: 'all'
+        };
+
+        // Demo Users
+        const demoUsers = [
+            { id: 1, name: 'John Doe', email: 'john@demo.com', password: 'password123', phone: '+91 9876543210', preferredLanguage: 'english' },
+            { id: 2, name: 'Sarah Wilson', email: 'sarah@demo.com', password: 'password123', phone: '+91 9876543211', preferredLanguage: 'hindi' },
+            { id: 3, name: 'Raj Patel', email: 'raj@demo.com', password: 'password123', phone: '+91 9876543212', preferredLanguage: 'tamil' }
+        ];
+
+        // Initialize users in localStorage if not exists
+        if (!localStorage.getItem('users')) {
+            localStorage.setItem('users', JSON.stringify(demoUsers));
+        }
+
+        // Latest Movies Database - 4 Languages Only
+        const movies = [
+            // English Movies (Latest 2023-2024)
+            {
+                id: 1,
+                title: "Oppenheimer",
+                genre: "drama",
+                rating: 8.3,
+                duration: "180 min",
+                language: "english",
+                poster: "https://m.media-amazon.com/images/M/MV5BMDBmYTZjNjUtN2M1MS00MTQ2LTk2ODgtNzc2M2QyZGE5NTVjXkEyXkFqcGdeQXVyNzAwMjU2MTY@._V1_SX300.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Oppenheimer_(film)",
+                description: "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.",
+                cast: ["Cillian Murphy", "Emily Blunt", "Robert Downey Jr."],
+                director: "Christopher Nolan"
+            },
+            {
+                id: 2,
+                title: "Guardians of the Galaxy Vol. 3",
+                genre: "action",
+                rating: 7.9,
+                duration: "150 min",
+                language: "english",
+                poster: "https://m.media-amazon.com/images/M/MV5BMDgxOTdjMzYtZGQxMS00ZTAzLWI4Y2UtMTQzN2VlYjYyZWRiXkEyXkFqcGdeQXVyMTkxNjUyNQ@@._V1_SX300.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Guardians_of_the_Galaxy_Vol._3",
+                description: "Peter Quill must rally his team around him on a dangerous mission to save Rocket's life.",
+                cast: ["Chris Pratt", "Zoe Saldana", "Dave Bautista"],
+                director: "James Gunn"
+            },
+            {
+                id: 3,
+                title: "John Wick: Chapter 4",
+                genre: "action",
+                rating: 7.7,
+                duration: "169 min",
+                language: "english",
+                poster: "https://m.media-amazon.com/images/M/MV5BMDExZGMyOTMtMDgyYi00NGIwLWJhMTEtOTdkZGFjNmZiMTEwXkEyXkFqcGdeQXVyMjM4NTM5NDY@._V1_SX300.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/John_Wick:_Chapter_4",
+                description: "John Wick uncovers a path to defeating The High Table. But before he can earn his freedom, Wick must face off against a new enemy.",
+                cast: ["Keanu Reeves", "Donnie Yen", "Bill Skarsgård"],
+                director: "Chad Stahelski"
+            },
+            {
+                id: 4,
+                title: "Scream VI",
+                genre: "horror",
+                rating: 6.5,
+                duration: "123 min",
+                language: "english",
+                poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNVHRX0CkEGUzhln455JGk00bXuvYQ1fl5cA&s",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Scream_VI",
+                description: "The survivors of the Ghostface killings leave Woodsboro behind and start a fresh chapter in New York City.",
+                cast: ["Melissa Barrera", "Jenna Ortega", "Jasmin Savoy Brown"],
+                director: "Matt Bettinelli-Olpin"
+            },
+            
+            // Hindi Movies (Latest 2023-2024)
+            {
+                id: 5,
+                title: "Jawan",
+                genre: "action",
+                rating: 7.1,
+                duration: "169 min",
+                language: "hindi",
+                poster: "https://i.pinimg.com/736x/59/27/50/5927501eeb30666518c6b9fa309fc4be.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Jawan_(film)",
+                description: "A high-octane action thriller which outlines the emotional journey of a man who is set to rectify the wrongs in the society.",
+                cast: ["Shah Rukh Khan", "Nayanthara", "Vijay Sethupathi"],
+                director: "Atlee"
+            },
+            {
+                id: 6,
+                title: "Pathaan",
+                genre: "action",
+                rating: 5.7,
+                duration: "146 min",
+                language: "hindi",
+                poster: "https://m.media-amazon.com/images/M/MV5BNDdkNTY1MDQtY2I5MC00OTFlLTg5OWQtZWE2YzE5NWFiMDgzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Pathaan_(film)",
+                description: "An exiled RAW agent partners with agent Rubina Mohsin to stop a mercenary organization from launching an attack against India.",
+                cast: ["Shah Rukh Khan", "Deepika Padukone", "John Abraham"],
+                director: "Siddharth Anand"
+            },
+            {
+                id: 7,
+                title: "Rocky Aur Rani Kii Prem Kahaani",
+                genre: "romance",
+                rating: 6.6,
+                duration: "178 min",
+                language: "hindi",
+                poster: "https://anandkumarrsonfilms.com/wp-content/uploads/2023/08/rarpk-poster.jpeg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Rocky_Aur_Rani_Kii_Prem_Kahaani",
+                description: "Magnifies the power of love, embraces the complexities of relationships, and celebrates the beauty of both perfect and imperfect families.",
+                cast: ["Ranveer Singh", "Alia Bhatt", "Dharmendra"],
+                director: "Karan Johar"
+            },
+            {
+                id: 8,
+                title: "Gadar 2",
+                genre: "drama",
+                rating: 5.9,
+                duration: "170 min",
+                language: "hindi",
+                poster: "https://upload.wikimedia.org/wikipedia/en/6/62/Gadar_2_film_poster.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Gadar_2",
+                description: "When Tara Singh goes missing during a skirmish and is believed to be captured in Pakistan, his son Jeete sets out to rescue him.",
+                cast: ["Sunny Deol", "Ameesha Patel", "Utkarsh Sharma"],
+                director: "Anil Sharma"
+            },
+            
+            // Malayalam Movies (Latest 2023-2024)
+            {
+                id: 9,
+                title: "2018",
+                genre: "drama",
+                rating: 8.7,
+                duration: "150 min",
+                language: "malayalam",
+                poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSPB7pRcGvpPoG8uKIZpHxWKxw2ICqtrB1wsA&s",
+                wikipediaLink: "https://en.wikipedia.org/wiki/2018_(film)",
+                description: "The story of the 2018 Kerala floods and the rescue operations that followed.",
+                cast: ["Tovino Thomas", "Kunchacko Boban", "Asif Ali"],
+                director: "Jude Anthany Joseph"
+            },
+            {
+                id: 10,
+                title: "Manjummel Boys",
+                genre: "thriller",
+                rating: 8.4,
+                duration: "135 min",
+                language: "malayalam",
+                poster: "https://upload.wikimedia.org/wikipedia/en/thumb/9/99/Manjummel_Boys_poster.jpg/250px-Manjummel_Boys_poster.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Manjummel_Boys",
+                description: "A group of friends get into a dangerous situation during their trip to Kodaikanal.",
+                cast: ["Soubin Shahir", "Sreenath Bhasi", "Balu Varghese"],
+                director: "Chidambaram"
+            },
+            {
+                id: 11,
+                title: "Aadujeevitham",
+                genre: "drama",
+                rating: 8.1,
+                duration: "148 min",
+                language: "malayalam",
+                poster: "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/The_Goat_Life_poster.jpg/250px-The_Goat_Life_poster.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Aadujeevitham",
+                description: "The real-life incident of an Indian migrant worker, Najeeb Muhammad, who goes to Saudi Arabia to earn money.",
+                cast: ["Prithviraj Sukumaran", "Amala Paul", "Jimmy Jean-Louis"],
+                director: "Blessy"
+            },
+            {
+                id: 12,
+                title: "Malaikottai Vaaliban",
+                genre: "action",
+                rating: 6.1,
+                duration: "158 min",
+                language: "malayalam",
+                poster: "https://upload.wikimedia.org/wikipedia/en/thumb/b/b7/Malaikottai_Vaaliban_poster.jpg/250px-Malaikottai_Vaaliban_poster.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Malaikottai_Vaaliban",
+                description: "The story of Malaikottai Vaaliban, an undisputed warrior who proves himself to be a reigning hero.",
+                cast: ["Mohanlal", "Sonalee Kulkarni", "Hareesh Peradi"],
+                director: "Lijo Jose Pellissery"
+            },
+            
+            // Tamil Movies (Latest 2023-2024)
+            {
+                id: 13,
+                title: "Jailer",
+                genre: "action",
+                rating: 7.1,
+                duration: "168 min",
+                language: "tamil",
+                poster: "https://m.media-amazon.com/images/M/MV5BMjE5MzhjYmItMGFjNC00ODIxLWJkNjktYWMxYTU0ZTM3NGYzXkEyXkFqcGc@._V1_.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Jailer_(2023_Tamil_film)",
+                description: "A retired jailer goes on a manhunt to find his son's killers. But the road leads him to a familiar, albeit a bit darker place.",
+                cast: ["Rajinikanth", "Mohanlal", "Shivarajkumar"],
+                director: "Nelson Dilipkumar"
+            },
+            {
+                id: 14,
+                title: "Leo",
+                genre: "action",
+                rating: 7.3,
+                duration: "164 min",
+                language: "tamil",
+                poster: "https://resizing.flixster.com/-BOvYVtW6LKWOdfbFz12hVdYzGk=/ems.cHJkLWVtcy1hc3NldHMvbW92aWVzL2RlNzVkZjM0LWRiZmEtNGE0YS1hYTUyLTU1YzlhYjQwMzViZi5qcGc=",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Leo_(2023_Tamil_film)",
+                description: "Parthiban has a loving family and is respected by everyone. But his past catches up with him and his family is threatened.",
+                cast: ["Vijay", "Trisha Krishnan", "Sanjay Dutt"],
+                director: "Lokesh Kanagaraj"
+            },
+            {
+                id: 15,
+                title: "Varisu",
+                genre: "drama",
+                rating: 5.6,
+                duration: "169 min",
+                language: "tamil",
+                poster: "https://m.media-amazon.com/images/M/MV5BNWU4OGI3ZmYtMTUwMy00ZDQ1LTg2NWMtMWFkMjlhYWYyYmJjXkEyXkFqcGc@._V1_.jpg",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Varisu",
+                description: "Vijay Rajendran is a happy to-go lucky man. Things change when his father becomes terminally ill, and he is left to manage his business empire.",
+                cast: ["Vijay", "Rashmika Mandanna", "R. Sarathkumar"],
+                director: "Vamshi Paidipally"
+            },
+            {
+                id: 16,
+                title: "Ponniyin Selvan II",
+                genre: "drama",
+                rating: 7.2,
+                duration: "164 min",
+                language: "tamil",
+                poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1jH5TqccWFL8WeQGZlg8_PiyttjtlFYw-9Q&s",
+                wikipediaLink: "https://en.wikipedia.org/wiki/Ponniyin_Selvan:_II",
+                description: "Arulmozhi Varman continues on his journey to become Rajaraja I, the greatest ruler of the historic Chola empire of south India.",
+                cast: ["Vikram", "Aishwarya Rai Bachchan", "Jayam Ravi"],
+                director: "Mani Ratnam"
+            }
+        ];
+
+        const theaters = [
+            {
+                id: 1,
+                name: "PVR Cinemas - Phoenix Mall",
+                location: "Lower Parel, Mumbai",
+                distance: "2.3 km",
+                amenities: ["Parking", "Food Court", "Wheelchair Access"],
+                showtimes: [
+                    { time: "10:30 AM", price: 200, type: "2D" },
+                    { time: "01:45 PM", price: 240, type: "2D" },
+                    { time: "05:00 PM", price: 280, type: "2D" },
+                    { time: "08:15 PM", price: 320, type: "2D" },
+                    { time: "11:30 PM", price: 240, type: "2D" }
+                ]
+            },
+            {
+                id: 2,
+                name: "INOX - R City Mall",
+                location: "Ghatkopar, Mumbai",
+                distance: "8.7 km",
+                amenities: ["Parking", "Food Court", "Premium Seats"],
+                showtimes: [
+                    { time: "11:00 AM", price: 220, type: "2D" },
+                    { time: "02:30 PM", price: 260, type: "2D" },
+                    { time: "06:00 PM", price: 300, type: "2D" },
+                    { time: "09:30 PM", price: 340, type: "2D" }
+                ]
+            },
+            {
+                id: 3,
+                name: "Cinepolis - Viviana Mall",
+                location: "Thane, Mumbai",
+                distance: "12.1 km",
+                amenities: ["Parking", "Food Court", "Recliner Seats"],
+                showtimes: [
+                    { time: "12:15 PM", price: 250, type: "2D" },
+                    { time: "03:45 PM", price: 290, type: "2D" },
+                    { time: "07:15 PM", price: 330, type: "2D" },
+                    { time: "10:45 PM", price: 270, type: "2D" }
+                ]
+            }
+        ];
+
+        // Language color mapping
+        const languageColors = {
+            english: 'bg-blue-100 text-blue-800',
+            hindi: 'bg-orange-100 text-orange-800',
+            malayalam: 'bg-green-100 text-green-800',
+            tamil: 'bg-red-100 text-red-800'
+        };
+
+        // Utility Functions
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `bg-${type === 'success' ? 'green' : 'red'}-500 text-white px-4 py-2 rounded-lg shadow-lg fade-in`;
+            toast.textContent = message;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(pageId + 'Page').classList.remove('hidden');
+            appState.currentPage = pageId;
+            
+            // Show language filters only on home page when user is logged in
+            const languageFilters = document.getElementById('languageFilters');
+            if (appState.currentUser && pageId === 'home') {
+                languageFilters.classList.remove('hidden');
+            } else {
+                languageFilters.classList.add('hidden');
+            }
+        }
+
+        function formatPrice(price) {
+            return `₹${price}`;
+        }
+
+        function getLanguageDisplayName(lang) {
+            const names = {
+                english: 'English',
+                hindi: 'हिंदी',
+                malayalam: 'മലയാളം',
+                tamil: 'தமிழ்'
+            };
+            return names[lang] || lang;
+        }
+
+        // Authentication Functions
+        function login(email, password) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                appState.currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                updateUserInterface();
+                showPage('home');
+                showToast(`Welcome back, ${user.name}!`);
+                return true;
+            }
+            return false;
+        }
+
+        function signup(userData) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            // Check if email already exists
+            if (users.find(u => u.email === userData.email)) {
+                return false;
+            }
+            
+            const newUser = {
+                id: Date.now(),
+                ...userData
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            appState.currentUser = newUser;
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            updateUserInterface();
+            showPage('home');
+            showToast(`Welcome to CineBook, ${newUser.name}!`);
+            return true;
+        }
+
+        function logout() {
+            appState.currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateUserInterface();
+            showPage('login');
+            showToast('Logged out successfully');
+        }
+
+        function updateUserInterface() {
+            const userMenu = document.getElementById('userMenu');
+            const authButtons = document.getElementById('authButtons');
+            const userInitials = document.getElementById('userInitials');
+            const languageFilters = document.getElementById('languageFilters');
+            
+            if (appState.currentUser) {
+                userMenu.classList.remove('hidden');
+                authButtons.classList.add('hidden');
+                languageFilters.classList.remove('hidden');
+                
+                const initials = appState.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                userInitials.textContent = initials;
+                
+                // Set language preference to 'all' by default
+                appState.selectedLanguage = 'all';
+                updateLanguageButtons('all');
+            } else {
+                userMenu.classList.add('hidden');
+                authButtons.classList.remove('hidden');
+                languageFilters.classList.add('hidden');
+            }
+        }
+
+        // Check for existing session
+        function checkExistingSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                appState.currentUser = JSON.parse(savedUser);
+                updateUserInterface();
+                showPage('home');
+                initHomePage();
+            } else {
+                showPage('login');
+            }
+        }
+
+        // Language filtering functions
+        function updateLanguageButtons(selectedLang) {
+            document.querySelectorAll('.language-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-pink-600', 'text-white', 'border-pink-600');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+            });
+            
+            const selectedBtn = document.querySelector(`[data-lang="${selectedLang}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+                selectedBtn.classList.add('bg-pink-600', 'text-white', 'border-pink-600');
+            }
+        }
+
+        function filterMoviesByLanguage(language) {
+            appState.selectedLanguage = language;
+            updateLanguageButtons(language);
+            initHomePage();
+        }
+
+        function getFilteredMovies() {
+            if (appState.selectedLanguage === 'all') {
+                return movies;
+            }
+            return movies.filter(movie => movie.language === appState.selectedLanguage);
+        }
+
+        // Initialize Home Page
+        function initHomePage() {
+            const movieGrid = document.getElementById('movieGrid');
+            movieGrid.innerHTML = '';
+
+            const filteredMovies = getFilteredMovies();
+
+            filteredMovies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow';
+                movieCard.innerHTML = `
+                    <div class="aspect-[3/4] bg-gray-100 overflow-hidden">
+                        <img src="${movie.poster}" alt="${movie.title}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='${movie.fallbackPoster || ''}'; if(!this.src) { this.style.display='none'; this.nextElementSibling.style.display='flex'; }"
+                             onload="this.nextElementSibling.style.display='none';">
+                        <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs" style="display: none;">
+                            <div class="text-center p-4">
+                                <div class="text-2xl mb-2">🎬</div>
+                                <div>Poster not available</div>
+                                <a href="${movie.wikipediaLink}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-xs mt-1 block">View on Wikipedia</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 text-sm mb-1">${movie.title}</h3>
+                        <p class="text-xs text-gray-600 mb-2">${movie.genre.charAt(0).toUpperCase() + movie.genre.slice(1)} • ${movie.duration}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">⭐ ${movie.rating}</span>
+                            <span class="language-badge ${languageColors[movie.language]}">${getLanguageDisplayName(movie.language)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                movieCard.addEventListener('click', () => {
+                    if (!appState.currentUser) {
+                        showToast('Please login to book tickets', 'error');
+                        showPage('login');
+                        return;
+                    }
+                    appState.selectedMovie = movie;
+                    showMovieDetails();
+                });
+                
+                movieGrid.appendChild(movieCard);
+            });
+        }
+
+        // Show Movie Details
+        function showMovieDetails() {
+            const movie = appState.selectedMovie;
+            const content = document.getElementById('movieDetailsContent');
+            
+            content.innerHTML = `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="md:flex">
+                        <div class="md:w-1/3">
+                            <div class="aspect-[3/4] bg-gray-100 overflow-hidden rounded-lg">
+                                <img src="${movie.poster}" alt="${movie.title}" 
+                                     class="w-full h-full object-cover"
+                                     onerror="this.onerror=null; this.src='${movie.fallbackPoster || ''}'; if(!this.src) { this.style.display='none'; this.nextElementSibling.style.display='flex'; }"
+                                     onload="this.nextElementSibling.style.display='none';">
+                                <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-sm" style="display: none;">
+                                    <div class="text-center p-4">
+                                        <div class="text-4xl mb-3">🎬</div>
+                                        <div class="mb-2">Poster not available</div>
+                                        <a href="${movie.wikipediaLink}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-xs">View on Wikipedia</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="md:w-2/3 p-6">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h1 class="text-3xl font-bold text-gray-900">${movie.title}</h1>
+                                <span class="language-badge ${languageColors[movie.language]}">${getLanguageDisplayName(movie.language)}</span>
+                            </div>
+                            <div class="flex items-center space-x-4 mb-4">
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">⭐ ${movie.rating}</span>
+                                <span class="text-gray-600">${movie.duration}</span>
+                                <span class="text-gray-600">${movie.genre.charAt(0).toUpperCase() + movie.genre.slice(1)}</span>
+                            </div>
+                            
+                            <p class="text-gray-700 mb-6">${movie.description}</p>
+                            
+                            <div class="mb-4">
+                                <h3 class="font-semibold text-gray-900 mb-2">Cast</h3>
+                                <p class="text-gray-600">${movie.cast.join(', ')}</p>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <h3 class="font-semibold text-gray-900 mb-2">Director</h3>
+                                <p class="text-gray-600">${movie.director}</p>
+                            </div>
+                            
+                            <button id="bookTicketsBtn" class="bg-pink-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors">
+                                Book Tickets
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('bookTicketsBtn').addEventListener('click', showTheaters);
+            showPage('movieDetails');
+        }
+
+        // Show Theaters
+        function showTheaters() {
+            const content = document.getElementById('theaterContent');
+            
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">${appState.selectedMovie.title}</h1>
+                    <p class="text-gray-600">Select theater and showtime</p>
+                </div>
+                
+                <div class="space-y-6">
+                    ${theaters.map(theater => `
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 text-lg">${theater.name}</h3>
+                                    <p class="text-gray-600 text-sm">${theater.location} • ${theater.distance}</p>
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        ${theater.amenities.map(amenity => `
+                                            <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">${amenity}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                ${theater.showtimes.map(showtime => `
+                                    <button class="showtime-btn border border-gray-300 rounded-lg p-3 text-center hover:border-pink-500 hover:bg-pink-50 transition-colors" 
+                                            data-theater="${theater.id}" data-time="${showtime.time}" data-price="${showtime.price}">
+                                        <div class="font-medium text-gray-900">${showtime.time}</div>
+                                        <div class="text-sm text-gray-600">${formatPrice(showtime.price)}</div>
+                                        <div class="text-xs text-gray-500">${showtime.type}</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Add event listeners to showtime buttons
+            document.querySelectorAll('.showtime-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const theaterId = parseInt(e.currentTarget.dataset.theater);
+                    const time = e.currentTarget.dataset.time;
+                    const price = parseInt(e.currentTarget.dataset.price);
+                    
+                    appState.selectedTheater = theaters.find(t => t.id === theaterId);
+                    appState.selectedShowtime = { time, price };
+                    
+                    showSeatSelection();
+                });
+            });
+            
+            showPage('theater');
+        }
+
+        // Show Seat Selection
+        function showSeatSelection() {
+            const content = document.getElementById('seatContent');
+            
+            // Generate seat map
+            const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+            const seatsPerRow = 12;
+            
+            // Simulate some booked seats
+            const bookedSeats = ['A5', 'A6', 'B3', 'C7', 'C8', 'D10', 'E2', 'F5', 'F6', 'G9'];
+            const heldSeats = ['B7', 'D4', 'H3'];
+            
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">Select Seats</h1>
+                    <p class="text-gray-600">${appState.selectedMovie.title} • ${appState.selectedTheater.name}</p>
+                    <p class="text-gray-600">${appState.selectedShowtime.time} • ${formatPrice(appState.selectedShowtime.price)} per seat</p>
+                </div>
+                
+                <!-- Seat Legend -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                    <div class="flex flex-wrap gap-6 text-sm">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-gray-200 border-2 border-gray-300 rounded mr-2"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-pink-600 border-2 border-pink-700 rounded mr-2"></div>
+                            <span>Selected</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-gray-600 border-2 border-gray-700 rounded mr-2"></div>
+                            <span>Booked</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-yellow-400 border-2 border-yellow-500 rounded mr-2"></div>
+                            <span>Held</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Screen -->
+                <div class="text-center mb-8">
+                    <div class="bg-gray-800 text-white py-2 px-8 rounded-t-full inline-block text-sm font-medium">
+                        SCREEN
+                    </div>
+                </div>
+                
+                <!-- Seat Map -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 overflow-x-auto">
+                    <div class="space-y-3">
+                        ${rows.map(row => `
+                            <div class="flex items-center justify-center gap-2">
+                                <div class="w-6 text-center font-medium text-gray-600">${row}</div>
+                                ${Array.from({length: seatsPerRow}, (_, i) => {
+                                    const seatId = `${row}${i + 1}`;
+                                    let seatClass = 'seat available';
+                                    
+                                    if (bookedSeats.includes(seatId)) {
+                                        seatClass = 'seat booked';
+                                    } else if (heldSeats.includes(seatId)) {
+                                        seatClass = 'seat held';
+                                    }
+                                    
+                                    return `
+                                        <button class="${seatClass} w-8 h-8 rounded text-xs font-medium" 
+                                                data-seat="${seatId}" ${bookedSeats.includes(seatId) ? 'disabled' : ''}>
+                                            ${i + 1}
+                                        </button>
+                                    `;
+                                }).join('')}
+                                <div class="w-6"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            // Add seat selection logic
+            document.querySelectorAll('.seat:not(.booked)').forEach(seat => {
+                seat.addEventListener('click', (e) => {
+                    const seatId = e.target.dataset.seat;
+                    
+                    if (e.target.classList.contains('selected')) {
+                        e.target.classList.remove('selected');
+                        e.target.classList.add('available');
+                        appState.selectedSeats = appState.selectedSeats.filter(s => s !== seatId);
+                    } else if (e.target.classList.contains('available')) {
+                        if (appState.selectedSeats.length < 6) { // Max 6 seats
+                            e.target.classList.remove('available');
+                            e.target.classList.add('selected');
+                            appState.selectedSeats.push(seatId);
+                        } else {
+                            showToast('Maximum 6 seats can be selected', 'error');
+                        }
+                    }
+                    
+                    updateBottomCart();
+                });
+            });
+            
+            startTimer();
+            showPage('seat');
+        }
+
+        // Update Bottom Cart
+        function updateBottomCart() {
+            const bottomCart = document.getElementById('bottomCart');
+            const cartSummary = document.getElementById('cartSummary');
+            const cartPrice = document.getElementById('cartPrice');
+            
+            if (appState.selectedSeats.length > 0) {
+                const totalPrice = appState.selectedSeats.length * appState.selectedShowtime.price;
+                cartSummary.textContent = `${appState.selectedSeats.length} Ticket${appState.selectedSeats.length > 1 ? 's' : ''} Selected`;
+                cartPrice.textContent = formatPrice(totalPrice);
+                bottomCart.classList.remove('hidden');
+            } else {
+                bottomCart.classList.add('hidden');
+            }
+        }
+
+        // Start Timer
+        function startTimer() {
+            appState.timeLeft = 300; // Reset to 5 minutes
+            const timerDisplay = document.getElementById('timerDisplay');
+            const timerBar = document.getElementById('timerBar');
+            
+            appState.timer = setInterval(() => {
+                appState.timeLeft--;
+                
+                const minutes = Math.floor(appState.timeLeft / 60);
+                const seconds = appState.timeLeft % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (appState.timeLeft <= 0) {
+                    clearInterval(appState.timer);
+                    showToast('Time expired! Please select seats again.', 'error');
+                    appState.selectedSeats = [];
+                    updateBottomCart();
+                    showSeatSelection(); // Refresh seat selection
+                }
+            }, 1000);
+        }
+
+        // Show Cart & Payment
+        function showCart() {
+            const content = document.getElementById('cartContent');
+            const subtotal = appState.selectedSeats.length * appState.selectedShowtime.price;
+            const convenienceFee = Math.round(subtotal * 0.05); // 5% convenience fee
+            const taxes = Math.round(subtotal * 0.18); // 18% GST
+            const total = subtotal + convenienceFee + taxes;
+            
+            content.innerHTML = `
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <!-- Booking Summary -->
+                    <div class="lg:col-span-2">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-6">Booking Summary</h1>
+                        
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                            <h3 class="font-semibold text-gray-900 mb-4">Movie Details</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Movie:</span>
+                                    <span class="font-medium">${appState.selectedMovie.title}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Theater:</span>
+                                    <span class="font-medium">${appState.selectedTheater.name}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Date & Time:</span>
+                                    <span class="font-medium">Today, ${appState.selectedShowtime.time}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Seats:</span>
+                                    <span class="font-medium">${appState.selectedSeats.join(', ')}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Information -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h3 class="font-semibold text-gray-900 mb-4">Contact Information</h3>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <input type="email" placeholder="Email Address" value="${appState.currentUser.email}"
+                                       class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                                <input type="tel" placeholder="Mobile Number" value="${appState.currentUser.phone}"
+                                       class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Summary -->
+                    <div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
+                            <h3 class="font-semibold text-gray-900 mb-4">Payment Summary</h3>
+                            
+                            <div class="space-y-3 text-sm mb-4">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Tickets (${appState.selectedSeats.length}x)</span>
+                                    <span>${formatPrice(subtotal)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Convenience Fee</span>
+                                    <span>${formatPrice(convenienceFee)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Taxes & Fees</span>
+                                    <span>${formatPrice(taxes)}</span>
+                                </div>
+                                <hr class="my-3">
+                                <div class="flex justify-between font-semibold text-lg">
+                                    <span>Total Amount</span>
+                                    <span>${formatPrice(total)}</span>
+                                </div>
+                            </div>
+                            
+                            <button id="payNowBtn" class="w-full bg-pink-600 text-white py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors">
+                                Pay ${formatPrice(total)}
+                            </button>
+                            
+                            <p class="text-xs text-gray-500 mt-3 text-center">
+                                By proceeding, you agree to our Terms & Conditions
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('payNowBtn').addEventListener('click', processPayment);
+            // Hide bottom cart on payment page
+            document.getElementById('bottomCart').classList.add('hidden');
+            showPage('cart');
+        }
+
+        // Process Payment
+        function processPayment() {
+            showPaymentGateway();
+        }
+
+        // Show Payment Gateway
+        function showPaymentGateway() {
+            const subtotal = appState.selectedSeats.length * appState.selectedShowtime.price;
+            const convenienceFee = Math.round(subtotal * 0.05);
+            const taxes = Math.round(subtotal * 0.18);
+            const total = subtotal + convenienceFee + taxes;
+
+            const content = document.getElementById('cartContent');
+            content.innerHTML = `
+                <div class="max-w-2xl mx-auto">
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">Complete Payment</h1>
+                        <p class="text-gray-600">Choose your preferred payment method</p>
+                    </div>
+
+                    <!-- Payment Amount Summary -->
+                    <div class="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg p-6 mb-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-pink-100 text-sm">Total Amount</p>
+                                <p class="text-3xl font-bold">${formatPrice(total)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-pink-100 text-sm">${appState.selectedSeats.length} Tickets</p>
+                                <p class="text-lg">${appState.selectedMovie.title}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Methods -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                        <h3 class="font-semibold text-gray-900 mb-4">Select Payment Method</h3>
+                        
+                        <div class="space-y-3">
+                            <!-- UPI Payment -->
+                            <label class="payment-method flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50">
+                                <input type="radio" name="paymentMethod" value="upi" class="mr-4" checked>
+                                <div class="flex items-center flex-1">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-lg flex items-center justify-center mr-4">
+                                        <span class="text-white font-bold text-lg">₹</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">UPI Payment</p>
+                                        <p class="text-sm text-gray-600">Pay using Google Pay, PhonePe, Paytm</p>
+                                    </div>
+                                </div>
+                                <span class="text-green-600 font-medium text-sm">Instant</span>
+                            </label>
+
+                            <!-- Credit/Debit Card -->
+                            <label class="payment-method flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50">
+                                <input type="radio" name="paymentMethod" value="card" class="mr-4">
+                                <div class="flex items-center flex-1">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center mr-4">
+                                        <span class="text-white font-bold text-lg">💳</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Credit/Debit Card</p>
+                                        <p class="text-sm text-gray-600">Visa, Mastercard, RuPay</p>
+                                    </div>
+                                </div>
+                                <span class="text-blue-600 font-medium text-sm">Secure</span>
+                            </label>
+
+                            <!-- Net Banking -->
+                            <label class="payment-method flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50">
+                                <input type="radio" name="paymentMethod" value="netbanking" class="mr-4">
+                                <div class="flex items-center flex-1">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-red-400 to-pink-500 rounded-lg flex items-center justify-center mr-4">
+                                        <span class="text-white font-bold text-lg">🏦</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Net Banking</p>
+                                        <p class="text-sm text-gray-600">All major banks supported</p>
+                                    </div>
+                                </div>
+                                <span class="text-red-600 font-medium text-sm">Safe</span>
+                            </label>
+
+                            <!-- Wallet -->
+                            <label class="payment-method flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-pink-500 hover:bg-pink-50">
+                                <input type="radio" name="paymentMethod" value="wallet" class="mr-4">
+                                <div class="flex items-center flex-1">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center mr-4">
+                                        <span class="text-white font-bold text-lg">👛</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Digital Wallet</p>
+                                        <p class="text-sm text-gray-600">Paytm, Amazon Pay, Mobikwik</p>
+                                    </div>
+                                </div>
+                                <span class="text-orange-600 font-medium text-sm">Quick</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form Container -->
+                    <div id="paymentFormContainer" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                        <!-- UPI Form (Default) -->
+                        <div id="upiForm" class="payment-form">
+                            <h4 class="font-medium text-gray-900 mb-4">Enter UPI ID</h4>
+                            <input type="text" id="upiId" placeholder="yourname@paytm" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent mb-4">
+                            <div class="flex items-center space-x-4">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23097939'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='20' font-weight='bold'%3EGPay%3C/text%3E%3C/svg%3E" alt="Google Pay" class="w-8 h-8">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%235f259f'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='16' font-weight='bold'%3EPhonePe%3C/text%3E%3C/svg%3E" alt="PhonePe" class="w-8 h-8">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2300baf2'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='18' font-weight='bold'%3EPaytm%3C/text%3E%3C/svg%3E" alt="Paytm" class="w-8 h-8">
+                            </div>
+                        </div>
+
+                        <!-- Card Form -->
+                        <div id="cardForm" class="payment-form hidden">
+                            <h4 class="font-medium text-gray-900 mb-4">Enter Card Details</h4>
+                            <div class="space-y-4">
+                                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" id="expiryDate" placeholder="MM/YY" maxlength="5"
+                                           class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                                    <input type="text" id="cvv" placeholder="CVV" maxlength="3"
+                                           class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                                </div>
+                                <input type="text" id="cardholderName" placeholder="Cardholder Name"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Net Banking Form -->
+                        <div id="netbankingForm" class="payment-form hidden">
+                            <h4 class="font-medium text-gray-900 mb-4">Select Your Bank</h4>
+                            <select id="bankSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                                <option value="">Choose your bank</option>
+                                <option value="sbi">State Bank of India</option>
+                                <option value="hdfc">HDFC Bank</option>
+                                <option value="icici">ICICI Bank</option>
+                                <option value="axis">Axis Bank</option>
+                                <option value="kotak">Kotak Mahindra Bank</option>
+                                <option value="pnb">Punjab National Bank</option>
+                            </select>
+                        </div>
+
+                        <!-- Wallet Form -->
+                        <div id="walletForm" class="payment-form hidden">
+                            <h4 class="font-medium text-gray-900 mb-4">Select Wallet</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="wallet-btn p-4 border border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50" data-wallet="paytm">
+                                    <div class="text-center">
+                                        <div class="w-12 h-12 bg-blue-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                                            <span class="text-white font-bold">P</span>
+                                        </div>
+                                        <p class="text-sm font-medium">Paytm</p>
+                                    </div>
+                                </button>
+                                <button class="wallet-btn p-4 border border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50" data-wallet="amazonpay">
+                                    <div class="text-center">
+                                        <div class="w-12 h-12 bg-orange-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                                            <span class="text-white font-bold">A</span>
+                                        </div>
+                                        <p class="text-sm font-medium">Amazon Pay</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Info -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center">
+                            <div class="text-green-600 mr-3">🔒</div>
+                            <div>
+                                <p class="text-sm font-medium text-green-800">Secure Payment</p>
+                                <p class="text-xs text-green-700">Your payment information is encrypted and secure</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pay Button -->
+                    <button id="processPaymentBtn" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-4 rounded-lg font-medium text-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
+                        Pay ${formatPrice(total)} Securely
+                    </button>
+                </div>
+            `;
+
+            // Payment method switching
+            document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.querySelectorAll('.payment-form').forEach(form => form.classList.add('hidden'));
+                    document.getElementById(e.target.value + 'Form').classList.remove('hidden');
+                });
+            });
+
+            // Card number formatting
+            document.getElementById('cardNumber')?.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+                e.target.value = formattedValue;
+            });
+
+            // Expiry date formatting
+            document.getElementById('expiryDate')?.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                e.target.value = value;
+            });
+
+            // Process payment
+            document.getElementById('processPaymentBtn').addEventListener('click', () => {
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                
+                // Validate payment method
+                let isValid = false;
+                switch (selectedMethod) {
+                    case 'upi':
+                        const upiId = document.getElementById('upiId').value;
+                        isValid = upiId && upiId.includes('@');
+                        break;
+                    case 'card':
+                        const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                        const expiryDate = document.getElementById('expiryDate').value;
+                        const cvv = document.getElementById('cvv').value;
+                        const cardholderName = document.getElementById('cardholderName').value;
+                        isValid = cardNumber.length === 16 && expiryDate.length === 5 && cvv.length === 3 && cardholderName;
+                        break;
+                    case 'netbanking':
+                        const bank = document.getElementById('bankSelect').value;
+                        isValid = bank !== '';
+                        break;
+                    case 'wallet':
+                        isValid = true; // Wallet selection handled separately
+                        break;
+                }
+
+                if (!isValid) {
+                    showToast('Please fill all required payment details', 'error');
+                    return;
+                }
+
+                // Simulate payment processing
+                document.getElementById('processPaymentBtn').innerHTML = `
+                    <div class="flex items-center justify-center">
+                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Processing Payment...
+                    </div>
+                `;
+                document.getElementById('processPaymentBtn').disabled = true;
+
+                setTimeout(() => {
+                    const booking = {
+                        id: Date.now(),
+                        userId: appState.currentUser.id,
+                        movie: appState.selectedMovie,
+                        theater: appState.selectedTheater,
+                        showtime: appState.selectedShowtime,
+                        seats: [...appState.selectedSeats],
+                        bookingDate: new Date().toISOString(),
+                        status: 'confirmed',
+                        paymentMethod: selectedMethod,
+                        totalAmount: total
+                    };
+                    
+                    // Store booking per user
+                    if (!appState.bookings[appState.currentUser.id]) {
+                        appState.bookings[appState.currentUser.id] = [];
+                    }
+                    appState.bookings[appState.currentUser.id].push(booking);
+                    localStorage.setItem('bookings', JSON.stringify(appState.bookings));
+                    
+                    clearInterval(appState.timer);
+                    showBookingSuccess(booking);
+                }, 3000);
+            });
+        }
+
+        // Show Booking Success
+        function showBookingSuccess(booking) {
+            const content = document.getElementById('successContent');
+            const paymentMethodNames = {
+                upi: 'UPI Payment',
+                card: 'Credit/Debit Card',
+                netbanking: 'Net Banking',
+                wallet: 'Digital Wallet'
+            };
+            
+            content.innerHTML = `
+                <div class="max-w-2xl mx-auto">
+                    <!-- Success Animation -->
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6">
+                            <div class="text-4xl">✅</div>
+                        </div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+                        <p class="text-lg text-gray-600 mb-4">Your movie tickets have been confirmed</p>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
+                            <p class="text-green-800 font-medium">Booking ID: #${booking.id}</p>
+                        </div>
+                    </div>
+
+                    <!-- Digital Ticket -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                        <!-- Ticket Header -->
+                        <div class="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="text-2xl font-bold mb-1">${booking.movie.title}</h2>
+                                    <p class="text-pink-100">${booking.movie.genre.charAt(0).toUpperCase() + booking.movie.genre.slice(1)} • ${booking.movie.duration}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="bg-white bg-opacity-20 rounded-lg px-3 py-1">
+                                        <p class="text-sm font-medium">${booking.seats.length} Ticket${booking.seats.length > 1 ? 's' : ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Body -->
+                        <div class="p-6">
+                            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                                <!-- Show Details -->
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                        <span class="mr-2">🎬</span> Show Details
+                                    </h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Theater:</span>
+                                            <span class="font-medium text-right">${booking.theater.name}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Location:</span>
+                                            <span class="font-medium text-right">${booking.theater.location}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Date:</span>
+                                            <span class="font-medium">Today</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Show Time:</span>
+                                            <span class="font-medium">${booking.showtime.time}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Seat & Payment Details -->
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                        <span class="mr-2">💺</span> Seat & Payment
+                                    </h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Seats:</span>
+                                            <span class="font-medium">${booking.seats.join(', ')}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Payment Method:</span>
+                                            <span class="font-medium">${paymentMethodNames[booking.paymentMethod]}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Total Amount:</span>
+                                            <span class="font-bold text-green-600">${formatPrice(booking.totalAmount)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Status:</span>
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Confirmed</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- QR Code Section -->
+                            <div class="border-t border-gray-200 pt-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 mb-1">Entry QR Code</h3>
+                                        <p class="text-sm text-gray-600">Show this at the theater entrance</p>
+                                    </div>
+                                    <div class="w-20 h-20 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                                        <div class="text-center">
+                                            <div class="text-2xl mb-1">📱</div>
+                                            <div class="text-xs text-gray-500">QR Code</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Perforated Edge Effect -->
+                        <div class="border-t border-dashed border-gray-300 bg-gray-50 p-4">
+                            <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                                <span>🎫 Valid for single entry</span>
+                                <span>•</span>
+                                <span>📱 Mobile ticket</span>
+                                <span>•</span>
+                                <span>🚫 Non-transferable</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Important Instructions -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h3 class="font-semibold text-blue-900 mb-2 flex items-center">
+                            <span class="mr-2">ℹ️</span> Important Instructions
+                        </h3>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• Please arrive 30 minutes before show time</li>
+                            <li>• Carry a valid ID proof for verification</li>
+                            <li>• Outside food and beverages are not allowed</li>
+                            <li>• Mobile phones must be on silent mode</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        <button id="downloadTicketBtn" class="bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center">
+                            <span class="mr-2">📥</span> Download Ticket
+                        </button>
+                        <button id="shareTicketBtn" class="bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center">
+                            <span class="mr-2">📤</span> Share Ticket
+                        </button>
+                        <button id="addToCalendarBtn" class="bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center">
+                            <span class="mr-2">📅</span> Add to Calendar
+                        </button>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <button id="viewBookingsBtn" class="border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                            View My Bookings
+                        </button>
+                        <button id="backToHomeBtn" class="bg-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-pink-700 transition-colors">
+                            Book More Tickets
+                        </button>
+                    </div>
+
+                    <!-- Feedback Section -->
+                    <div class="mt-8 text-center">
+                        <p class="text-gray-600 mb-3">How was your booking experience?</p>
+                        <div class="flex justify-center space-x-2">
+                            <button class="feedback-btn text-2xl hover:scale-110 transition-transform" data-rating="1">😞</button>
+                            <button class="feedback-btn text-2xl hover:scale-110 transition-transform" data-rating="2">😐</button>
+                            <button class="feedback-btn text-2xl hover:scale-110 transition-transform" data-rating="3">😊</button>
+                            <button class="feedback-btn text-2xl hover:scale-110 transition-transform" data-rating="4">😍</button>
+                            <button class="feedback-btn text-2xl hover:scale-110 transition-transform" data-rating="5">🤩</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Event listeners
+            document.getElementById('downloadTicketBtn').addEventListener('click', () => {
+                showToast('Ticket downloaded successfully! Check your downloads folder.', 'success');
+            });
+
+            document.getElementById('shareTicketBtn').addEventListener('click', () => {
+                if (navigator.share) {
+                    navigator.share({
+                        title: `Movie Ticket - ${booking.movie.title}`,
+                        text: `I've booked tickets for ${booking.movie.title} at ${booking.theater.name}. Show time: ${booking.showtime.time}`,
+                        url: window.location.href
+                    });
+                } else {
+                    showToast('Ticket details copied to clipboard!', 'success');
+                }
+            });
+
+            document.getElementById('addToCalendarBtn').addEventListener('click', () => {
+                showToast('Event added to your calendar!', 'success');
+            });
+
+            document.getElementById('viewBookingsBtn').addEventListener('click', () => {
+                resetBookingState();
+                showMyBookings();
+            });
+            
+            document.getElementById('backToHomeBtn').addEventListener('click', () => {
+                resetBookingState();
+                showPage('home');
+            });
+
+            // Feedback buttons
+            document.querySelectorAll('.feedback-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const rating = e.target.dataset.rating;
+                    showToast(`Thank you for your ${rating}-star feedback!`, 'success');
+                    document.querySelectorAll('.feedback-btn').forEach(b => b.style.opacity = '0.5');
+                    e.target.style.opacity = '1';
+                });
+            });
+            
+            // Hide bottom cart on success page
+            document.getElementById('bottomCart').classList.add('hidden');
+            showPage('success');
+        }
+
+        // Show My Bookings
+        function showMyBookings() {
+            const content = document.getElementById('bookingsContent');
+            const userBookings = appState.bookings[appState.currentUser.id] || [];
+            
+            if (userBookings.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">🎬</div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">No Bookings Yet</h2>
+                        <p class="text-gray-600 mb-6">Start by booking your first movie ticket!</p>
+                        <button id="browseMoviesBtn" class="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700">
+                            Browse Movies
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('browseMoviesBtn').addEventListener('click', () => {
+                    showPage('home');
+                });
+            } else {
+                content.innerHTML = `
+                    <div class="mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900">My Bookings</h1>
+                        <p class="text-gray-600">Manage your movie tickets</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${userBookings.map(booking => `
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 text-lg">${booking.movie.title}</h3>
+                                        <p class="text-gray-600">${booking.theater.name}</p>
+                                        <p class="text-sm text-gray-500">Booking ID: #${booking.id}</p>
+                                    </div>
+                                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                        ${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                    </span>
+                                </div>
+                                
+                                <div class="grid md:grid-cols-3 gap-4 mb-4 text-sm">
+                                    <div>
+                                        <span class="text-gray-600">Date & Time:</span>
+                                        <p class="font-medium">Today, ${booking.showtime.time}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Seats:</span>
+                                        <p class="font-medium">${booking.seats.join(', ')}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Total Amount:</span>
+                                        <p class="font-medium">${formatPrice(booking.seats.length * booking.showtime.price)}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-wrap gap-3">
+                                    <button class="edit-booking-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700" 
+                                            data-booking-id="${booking.id}">
+                                        Edit Booking
+                                    </button>
+                                    <button class="repeat-booking-btn border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50" 
+                                            data-booking-id="${booking.id}">
+                                        Repeat Booking
+                                    </button>
+                                    <button class="download-ticket-btn border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+                                        Download Ticket
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                // Add event listeners
+                document.querySelectorAll('.edit-booking-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const bookingId = parseInt(e.target.dataset.bookingId);
+                        editBooking(bookingId);
+                    });
+                });
+                
+                document.querySelectorAll('.repeat-booking-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const bookingId = parseInt(e.target.dataset.bookingId);
+                        repeatBooking(bookingId);
+                    });
+                });
+                
+                document.querySelectorAll('.download-ticket-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        showToast('Ticket downloaded successfully!', 'success');
+                    });
+                });
+            }
+            
+            showPage('bookings');
+        }
+
+        // Edit Booking
+        function editBooking(bookingId) {
+            const userBookings = appState.bookings[appState.currentUser.id] || [];
+            const booking = userBookings.find(b => b.id === bookingId);
+            appState.currentBooking = booking;
+            
+            const content = document.getElementById('editBookingContent');
+            
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">Edit Booking</h1>
+                    <p class="text-gray-600">Modify your booking details</p>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="font-semibold text-gray-900 mb-4">Current Booking</h3>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Movie:</span>
+                            <p class="font-medium">${booking.movie.title}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Theater:</span>
+                            <p class="font-medium">${booking.theater.name}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Show Time:</span>
+                            <p class="font-medium">Today, ${booking.showtime.time}</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Seats:</span>
+                            <p class="font-medium">${booking.seats.join(', ')}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <button id="changeSeatsBtn" class="bg-blue-600 text-white p-6 rounded-lg text-center hover:bg-blue-700 transition-colors">
+                        <div class="text-2xl mb-2">💺</div>
+                        <h3 class="font-semibold mb-2">Change Seats</h3>
+                        <p class="text-sm opacity-90">Select different seats for the same show</p>
+                    </button>
+                    
+                    <button id="changeShowtimeBtn" class="bg-green-600 text-white p-6 rounded-lg text-center hover:bg-green-700 transition-colors">
+                        <div class="text-2xl mb-2">🕐</div>
+                        <h3 class="font-semibold mb-2">Change Showtime</h3>
+                        <p class="text-sm opacity-90">Pick a different time or date</p>
+                    </button>
+                </div>
+                
+                <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Note:</strong> Changes can be made up to 2 hours before the show time. 
+                        Additional charges may apply for upgrades.
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('changeSeatsBtn').addEventListener('click', () => {
+                // Set up state for editing
+                appState.selectedMovie = booking.movie;
+                appState.selectedTheater = booking.theater;
+                appState.selectedShowtime = booking.showtime;
+                appState.selectedSeats = [];
+                
+                showSeatSelection();
+                showToast('Select new seats for your booking', 'success');
+            });
+            
+            document.getElementById('changeShowtimeBtn').addEventListener('click', () => {
+                appState.selectedMovie = booking.movie;
+                showTheaters();
+                showToast('Select a new showtime', 'success');
+            });
+            
+            showPage('editBooking');
+        }
+
+        // Repeat Booking
+        function repeatBooking(bookingId) {
+            const userBookings = appState.bookings[appState.currentUser.id] || [];
+            const booking = userBookings.find(b => b.id === bookingId);
+            
+            // Pre-fill booking details
+            appState.selectedMovie = booking.movie;
+            appState.selectedTheater = booking.theater;
+            appState.selectedShowtime = booking.showtime;
+            appState.selectedSeats = [];
+            
+            showSeatSelection();
+            showToast('Repeating your previous booking. Select seats to continue.', 'success');
+        }
+
+        // Reset Booking State
+        function resetBookingState() {
+            appState.selectedMovie = null;
+            appState.selectedTheater = null;
+            appState.selectedShowtime = null;
+            appState.selectedSeats = [];
+            appState.currentBooking = null;
+            
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
+            
+            document.getElementById('bottomCart').classList.add('hidden');
+        }
+
+        // Event Listeners
+        document.getElementById('backToHome').addEventListener('click', () => showPage('home'));
+        document.getElementById('backToMovieDetails').addEventListener('click', () => showPage('movieDetails'));
+        document.getElementById('backToTheater').addEventListener('click', () => showPage('theater'));
+        document.getElementById('backToSeats').addEventListener('click', () => showPage('seat'));
+        document.getElementById('backToHomeFromBookings').addEventListener('click', () => showPage('home'));
+        document.getElementById('backToBookings').addEventListener('click', () => showPage('bookings'));
+        document.getElementById('myBookingsBtn').addEventListener('click', showMyBookings);
+        document.getElementById('proceedToPayment').addEventListener('click', showCart);
+
+        // Auth Event Listeners
+        document.getElementById('loginBtn').addEventListener('click', () => showPage('login'));
+        document.getElementById('signupBtn').addEventListener('click', () => showPage('signup'));
+        document.getElementById('switchToSignup').addEventListener('click', () => showPage('signup'));
+        document.getElementById('switchToLogin').addEventListener('click', () => showPage('login'));
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // Language Filter Event Listeners
+        document.querySelectorAll('.language-filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const language = e.target.dataset.lang;
+                filterMoviesByLanguage(language);
+            });
+        });
+
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (login(email, password)) {
+                initHomePage();
+            } else {
+                showToast('Invalid email or password', 'error');
+            }
+        });
+
+        // Signup Form
+        document.getElementById('signupForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userData = {
+                name: document.getElementById('signupName').value,
+                email: document.getElementById('signupEmail').value,
+                phone: document.getElementById('signupPhone').value,
+                password: document.getElementById('signupPassword').value,
+                preferredLanguage: document.getElementById('signupLanguage').value
+            };
+            
+            if (signup(userData)) {
+                initHomePage();
+            } else {
+                showToast('Email already exists', 'error');
+            }
+        });
+
+        // Filter functionality
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-chip').forEach(c => {
+                    c.classList.remove('bg-pink-600', 'text-white');
+                    c.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+                });
+                e.target.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+                e.target.classList.add('bg-pink-600', 'text-white', 'border-pink-600');
+                
+                const filter = e.target.dataset.filter;
+                filterMovies(filter);
+            });
+        });
+
+        function filterMovies(genre) {
+            const movieGrid = document.getElementById('movieGrid');
+            movieGrid.innerHTML = '';
+            
+            let filteredMovies = getFilteredMovies();
+            if (genre !== 'all') {
+                filteredMovies = filteredMovies.filter(movie => movie.genre === genre);
+            }
+            
+            filteredMovies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow';
+                movieCard.innerHTML = `
+                    <div class="aspect-[3/4] bg-gray-100 overflow-hidden">
+                        <img src="${movie.poster}" alt="${movie.title}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='${movie.fallbackPoster || ''}'; if(!this.src) { this.style.display='none'; this.nextElementSibling.style.display='flex'; }"
+                             onload="this.nextElementSibling.style.display='none';">
+                        <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs" style="display: none;">
+                            <div class="text-center p-4">
+                                <div class="text-2xl mb-2">🎬</div>
+                                <div>Poster not available</div>
+                                <a href="${movie.wikipediaLink}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-xs mt-1 block">View on Wikipedia</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 text-sm mb-1">${movie.title}</h3>
+                        <p class="text-xs text-gray-600 mb-2">${movie.genre.charAt(0).toUpperCase() + movie.genre.slice(1)} • ${movie.duration}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">⭐ ${movie.rating}</span>
+                            <span class="language-badge ${languageColors[movie.language]}">${getLanguageDisplayName(movie.language)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                movieCard.addEventListener('click', () => {
+                    if (!appState.currentUser) {
+                        showToast('Please login to book tickets', 'error');
+                        showPage('login');
+                        return;
+                    }
+                    appState.selectedMovie = movie;
+                    showMovieDetails();
+                });
+                
+                movieGrid.appendChild(movieCard);
+            });
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const movieGrid = document.getElementById('movieGrid');
+            movieGrid.innerHTML = '';
+            
+            let filteredMovies = getFilteredMovies();
+            filteredMovies = filteredMovies.filter(movie => 
+                movie.title.toLowerCase().includes(searchTerm) ||
+                movie.genre.toLowerCase().includes(searchTerm) ||
+                movie.cast.some(actor => actor.toLowerCase().includes(searchTerm)) ||
+                movie.director.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredMovies.forEach(movie => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow';
+                movieCard.innerHTML = `
+                    <div class="aspect-[3/4] bg-gray-100 overflow-hidden">
+                        <img src="${movie.poster}" alt="${movie.title}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='${movie.fallbackPoster || ''}'; if(!this.src) { this.style.display='none'; this.nextElementSibling.style.display='flex'; }"
+                             onload="this.nextElementSibling.style.display='none';">
+                        <div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs" style="display: none;">
+                            <div class="text-center p-4">
+                                <div class="text-2xl mb-2">🎬</div>
+                                <div>Poster not available</div>
+                                <a href="${movie.wikipediaLink}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-xs mt-1 block">View on Wikipedia</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 text-sm mb-1">${movie.title}</h3>
+                        <p class="text-xs text-gray-600 mb-2">${movie.genre.charAt(0).toUpperCase() + movie.genre.slice(1)} • ${movie.duration}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">⭐ ${movie.rating}</span>
+                            <span class="language-badge ${languageColors[movie.language]}">${getLanguageDisplayName(movie.language)}</span>
+                        </div>
+                    </div>
+                `;
+                
+                movieCard.addEventListener('click', () => {
+                    if (!appState.currentUser) {
+                        showToast('Please login to book tickets', 'error');
+                        showPage('login');
+                        return;
+                    }
+                    appState.selectedMovie = movie;
+                    showMovieDetails();
+                });
+                
+                movieGrid.appendChild(movieCard);
+            });
+        });
+
+        // Initialize the application
+        checkExistingSession();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98d7510e44a3178a',t:'MTc2MDI3OTY1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
